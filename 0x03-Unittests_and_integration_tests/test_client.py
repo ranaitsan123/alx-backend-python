@@ -90,7 +90,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         cls.get_patcher = patch('requests.get')
         mock_get = cls.get_patcher.start()
 
-        # The mock should return org_payload then repos_payload
+        # The mock returns org_payload then repos_payload
         mock_get.side_effect = [
             unittest.mock.Mock(**{"json.return_value": cls.org_payload}),
             unittest.mock.Mock(**{"json.return_value": cls.repos_payload}),
