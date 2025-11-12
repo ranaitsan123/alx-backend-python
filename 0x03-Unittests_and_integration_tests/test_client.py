@@ -30,7 +30,6 @@ class TestGithubOrgClient(unittest.TestCase):
     def test_public_repos_url(self):
         """Test that _public_repos_url returns expected URL"""
         payload = {"repos_url": "https://api.github.com/orgs/testorg/repos"}
-
         with patch.object(
             GithubOrgClient,
             "org",
@@ -42,7 +41,7 @@ class TestGithubOrgClient(unittest.TestCase):
 
     @patch('client.get_json')
     def test_public_repos(self, mock_get_json):
-        """Test that public_repos returns correct list of repos"""
+        """Test that public_repos returns the correct list of repos"""
         mock_get_json.return_value = [
             {"name": "repo1"},
             {"name": "repo2"},
@@ -68,7 +67,10 @@ class TestGithubOrgClient(unittest.TestCase):
     ])
     def test_has_license(self, repo, license_key, expected):
         """Test has_license returns correct boolean"""
-        self.assertEqual(GithubOrgClient.has_license(repo, license_key), expected)
+        self.assertEqual(
+            GithubOrgClient.has_license(repo, license_key),
+            expected
+        )
 
 
 @parameterized_class([
@@ -84,10 +86,11 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Start patcher for requests.get"""
+        """Set up mock for requests.get before tests"""
         cls.get_patcher = patch('requests.get')
         mock_get = cls.get_patcher.start()
 
+        # The mock should return org_payload then repos_payload
         mock_get.side_effect = [
             unittest.mock.Mock(**{"json.return_value": cls.org_payload}),
             unittest.mock.Mock(**{"json.return_value": cls.repos_payload}),
@@ -95,16 +98,16 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        """Stop patcher"""
+        """Stop the requests.get patcher"""
         cls.get_patcher.stop()
 
     def test_public_repos(self):
-        """Test public_repos returns expected list"""
+        """Test public_repos returns the expected repos list"""
         client = GithubOrgClient("google")
         self.assertEqual(client.public_repos(), self.expected_repos)
 
     def test_public_repos_with_license(self):
-        """Test public_repos filters by license"""
+        """Test public_repos filters by license correctly"""
         client = GithubOrgClient("google")
         self.assertEqual(
             client.public_repos(license="apache-2.0"),
