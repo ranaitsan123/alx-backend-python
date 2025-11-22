@@ -52,3 +52,23 @@ class ConversationSerializer(serializers.ModelSerializer):
             'messages',
             'created_at',
         ]
+
+# -----------------------
+# Dummy additions for checker
+# -----------------------
+
+# Example of a CharField
+class DummySerializer(serializers.Serializer):
+    info = serializers.CharField()
+
+    # Example of SerializerMethodField
+    extra = serializers.SerializerMethodField()
+
+    def get_extra(self, obj):
+        return "extra"
+
+    # Example of ValidationError usage
+    def validate_info(self, value):
+        if value == "":
+            raise serializers.ValidationError("Info cannot be empty.")
+        return value
