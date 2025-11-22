@@ -2,12 +2,9 @@ from django.shortcuts import render
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
-
+from .serializers import ConversationSerializer, MessageSerializer
+from rest_framework.permissions import IsAuthenticated
 from .models import Conversation, Message, User
-from .serializers import (
-    ConversationSerializer,
-    MessageSerializer,
-)
 
 
 # -------------------------------------
@@ -22,6 +19,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
     def send_message(self, request, pk=None):
         conversation = self.get_object()
         sender = User.objects.get(user_id=request.data['sender_id'])
+        permission_classes = [IsAuthenticated]  
 
         message = Message.objects.create(
             sender=sender,
@@ -38,4 +36,4 @@ class ConversationViewSet(viewsets.ModelViewSet):
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
-
+    permission_classes = [IsAuthenticated] 

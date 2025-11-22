@@ -230,3 +230,129 @@ After completing the Docker setup, proceed with:
 * ViewSets
 * URL routing
 
+---
+
+## Tasks / Features
+
+This project implements a messaging application with the following key functionalities:
+
+### 1. User Authentication
+
+Users can register, log in, and manage their accounts. The app uses a custom user model defined in `chats/models.py`.
+
+**Code Example:**
+```python
+# chats/models.py
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+class User(AbstractUser):
+    bio = models.TextField(blank=True, null=True)
+````
+
+**Explanation:**
+
+* `AbstractUser` allows extending the default Django user.
+* `bio` is a custom field added to store user information.
+
+---
+
+### 2. Chat Functionality
+
+Users can send and receive messages in real-time. The messages are stored in the database.
+
+**Code Example:**
+
+```python
+# chats/models.py
+class Message(models.Model):
+    sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
+    receiver = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"From {self.sender} to {self.receiver}: {self.content[:20]}"
+```
+
+**Explanation:**
+
+* `ForeignKey` links messages to sender and receiver users.
+* `auto_now_add=True` automatically sets the timestamp when the message is created.
+
+---
+
+### 3. API Endpoints
+
+The app exposes RESTful APIs for chat operations using Django REST Framework.
+
+**Code Example:**
+
+```python
+# chats/serializers.py
+from rest_framework import serializers
+from .models import Message
+
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = '__all__'
+```
+
+```python
+# chats/views.py
+from rest_framework import viewsets
+from .models import Message
+from .serializers import MessageSerializer
+
+class MessageViewSet(viewsets.ModelViewSet):
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+```
+
+**Explanation:**
+
+* `ModelSerializer` automatically converts models to JSON for the API.
+* `ModelViewSet` provides default CRUD operations (`list`, `create`, `retrieve`, `update`, `delete`).
+
+---
+
+### 4. Running Tasks
+
+To perform the migrations, run the following:
+
+```bash
+docker-compose run web python manage.py makemigrations
+docker-compose run web python manage.py migrate
+```
+
+**Explanation:**
+
+* `makemigrations` detects changes in models and creates migration files.
+* `migrate` applies these migrations to the database.
+
+---
+
+### 5. Running the Server
+
+```bash
+docker-compose up --build
+```
+
+Then open `http://localhost:8000` in your browser.
+
+**Explanation:**
+
+* `--build` ensures all Docker images are rebuilt.
+* The server reloads automatically on code changes during development.
+
+
+---
+
+✅ This structure:  
+
+1. Shows **task/feature name**.  
+2. Includes **code snippets**.  
+3. Explains **how it works** in simple terms.  
+4. Includes **commands to run or test the functionality**.
+
