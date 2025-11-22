@@ -67,3 +67,12 @@ class ConversationViewSet(viewsets.ModelViewSet):
             MessageSerializer(message).data,
             status=status.HTTP_201_CREATED
         )
+
+# ---------------------------
+# Message ViewSet
+# ---------------------------
+class MessageViewSet(viewsets.ModelViewSet):
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_class = MessageFilter
