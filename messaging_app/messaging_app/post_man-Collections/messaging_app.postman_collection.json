@@ -1,0 +1,58 @@
+{
+  "info": {
+    "name": "Messaging App API",
+    "_postman_id": "alx-messaging-app",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Login (JWT)",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/auth/login/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"test@example.com\", \"password\": \"password123\"}"
+        }
+      }
+    },
+    {
+      "name": "Create Conversation",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/conversations/",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"participants\": [\"<USER_ID>\"]}"
+        }
+      }
+    },
+    {
+      "name": "Send Message",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/messages/",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"conversation\": \"<CONVERSATION_ID>\", \"message_body\": \"Hello world\"}"
+        }
+      }
+    },
+    {
+      "name": "Get Messages (Paginated)",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/messages/?page=1",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ]
+      }
+    }
+  ]
+}
