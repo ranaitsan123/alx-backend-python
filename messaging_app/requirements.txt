@@ -3,7 +3,7 @@ djangorestframework
 django-environ
 drf-yasg
 djangorestframework-simplejwt
-django-filter
 faker
 psycopg2-binary
+django-filter
 drf-nested-routers

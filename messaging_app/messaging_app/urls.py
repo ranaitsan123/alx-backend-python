@@ -8,6 +8,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
+
 schema_view = get_schema_view(
     openapi.Info(
         title="Messaging API",
@@ -25,4 +26,6 @@ urlpatterns = [
     path('api/auth/login/', TokenObtainPairView.as_view(), name='jwt-login'),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='jwt-refresh'),
     path('docs/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger-ui'),
+    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 ]

@@ -2,68 +2,53 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from django_filters import rest_framework as filters
+from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Conversation, Message, User
 from .serializers import ConversationSerializer, MessageSerializer
-
-
-# ---------------------------
-# Conversation Filters
-# ---------------------------
-class ConversationFilter(filters.FilterSet):
-    participant = filters.CharFilter(method="filter_participant")
-
-    class Meta:
-        model = Conversation
-        fields = []
-
-    def filter_participant(self, queryset, name, value):
-        """Filter by participant email."""
-        return queryset.filter(participants__email__icontains=value)
-
-
-# ---------------------------
-# Message Filters
-# ---------------------------
-class MessageFilter(filters.FilterSet):
-    sender = filters.CharFilter(field_name="sender__email", lookup_expr="icontains")
-    conversation = filters.CharFilter(field_name="conversation__conversation_id")
-
-    class Meta:
-        model = Message
-        fields = ["sender", "conversation"]
+from .permissions import IsParticipantOfConversation
+from .filters import MessageFilter
 
 
 # ---------------------------
 # Conversation ViewSet
 # ---------------------------
 class ConversationViewSet(viewsets.ModelViewSet):
+    """
+    Conversations can ONLY be accessed by participants.
+    Filtering by participant is still available.
+    """
     queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
-    permission_classes = [IsAuthenticated]
-    filterset_class = ConversationFilter
+    permission_classes = [IsAuthenticated, IsParticipantOfConversation]
+    filter_backends = [DjangoFilterBackend]
 
+    def get_queryset(self):
+        # Users only see conversations they participate in
+        return Conversation.objects.filter(participants=self.request.user)
+
+    # Custom action: send message to conversation
     @action(detail=True, methods=['post'], url_path='send-message')
     def send_message(self, request, pk=None):
         conversation = self.get_object()
 
-        sender_id = request.data.get("sender_id")
+        # Ensure requesting user is a participant (extra safety)
+        if request.user not in conversation.participants.all():
+            return Response(
+                {"error": "You are not allowed to send messages in this conversation."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         message_body = request.data.get("message_body")
 
-        if not sender_id or not message_body:
+        if not message_body:
             return Response(
-                {"error": "sender_id and message_body are required"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": "message_body is required"},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-        try:
-            sender = User.objects.get(user_id=sender_id)
-        except User.DoesNotExist:
-            return Response(
-                {"error": "Sender not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        # Sender is always the authenticated user
+        sender = request.user
 
         message = Message.objects.create(
             sender=sender,
@@ -73,7 +58,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
         return Response(
             MessageSerializer(message).data,
-            status=status.HTTP_201_CREATED,
+            status=status.HTTP_201_CREATED
         )
 
 
@@ -81,7 +66,18 @@ class ConversationViewSet(viewsets.ModelViewSet):
 # Message ViewSet
 # ---------------------------
 class MessageViewSet(viewsets.ModelViewSet):
+    """
+    Messages can ONLY be accessed if the user is part of the conversation.
+    Supports filtering and pagination.
+    """
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsParticipantOfConversation]
+    filter_backends = [DjangoFilterBackend]
     filterset_class = MessageFilter
+
+    def get_queryset(self):
+        # User sees only messages in conversations they participate in
+        return Message.objects.filter(
+            conversation__participants=self.request.user
+        )

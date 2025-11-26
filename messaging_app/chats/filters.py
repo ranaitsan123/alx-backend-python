@@ -2,17 +2,10 @@ import django_filters
 from .models import Message
 
 class MessageFilter(django_filters.FilterSet):
-    start_date = django_filters.DateTimeFilter(
-        field_name='sent_at', lookup_expr='gte'
-    )
-    end_date = django_filters.DateTimeFilter(
-        field_name='sent_at', lookup_expr='lte'
-    )
-    participant = django_filters.CharFilter(
-        field_name='conversation__participants__email',
-        lookup_expr='icontains'
-    )
+    user = django_filters.CharFilter(field_name="sender__username")
+    date_from = django_filters.DateTimeFilter(field_name="sent_at", lookup_expr="gte")
+    date_to = django_filters.DateTimeFilter(field_name="sent_at", lookup_expr="lte")
 
     class Meta:
         model = Message
-        fields = ['start_date', 'end_date', 'participant']
+        fields = ["user", "date_from", "date_to"]

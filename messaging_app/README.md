@@ -1,546 +1,209 @@
-# 📘 **Messaging App — Docker Setup Tutorial**
+# Messaging App API
 
-This project uses **Docker** to fully manage the Django environment.
-You do **not** need Python installed on your machine — Docker handles everything:
-
-✔ Installing packages
-✔ Creating the Django project
-✔ Creating Django apps
-✔ Running manage.py commands
-✔ Running the development server
-
----
-
-# 🚀 **1. Project Setup**
-
-Create your project folder:
-
-```bash
-mkdir messaging_app
-cd messaging_app
-```
-
----
-
-# 🐳 **2. Docker Configuration**
-
-The project uses:
-
-* `Dockerfile` → defines the Django environment
-* `docker-compose.yml` → runs Django server
-* `requirements.txt` → Python dependencies
-* `.env` → environment variables
-
----
-
-## **2.1 Dockerfile**
-
-Create a file named **Dockerfile**:
-
-```dockerfile
-FROM python:3.11-slim
-
-# Prevent Python from writing .pyc files
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-WORKDIR /app
-
-# Install system dependencies (required for Django + psycopg2)
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    && apt-get clean
-
-COPY requirements.txt /app/
-
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-COPY . /app/
-```
-
----
-
-## **2.2 requirements.txt**
-
-Create:
-
-```
-Django>=5.0
-djangorestframework
-django-environ
-psycopg2-binary
-```
-
----
-
-## **2.3 docker-compose.yml**
-
-Create:
-
-```yaml
-version: '3.9'
-
-services:
-  web:
-    build: .
-    container_name: messaging_app_web
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - .:/app
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-```
-
----
-
-## **2.4 .env file**
-
-Create:
-
-```
-DEBUG=1
-SECRET_KEY=change-me
-```
-
----
-
-# 🏗️ **3. Initialize Django Project Using Docker**
-
-Since Django is not installed locally, we use Docker to create the project.
-
-### Create the Django project:
-
-```bash
-docker-compose run web django-admin startproject messaging_app .
-```
-
-This command will generate:
-
-```
-manage.py
-messaging_app/
-    settings.py
-    urls.py
-    wsgi.py
-    asgi.py
-```
-
----
-
-# 🧩 **4. Create the “chats” App**
-
-Still using Docker:
-
-```bash
-docker-compose run web python manage.py startapp chats
-```
-
-This creates:
-
-```
-chats/
-    models.py
-    views.py
-    apps.py
-    ...
-```
-
----
-
-# 🛠️ **5. Applying Migrations**
-
-Run:
-
-```bash
-docker-compose run web python manage.py makemigrations
-docker-compose run web python.manage.py migrate
-```
-
-This initializes your database tables.
-
----
-
-# ▶️ **6. Run the Server**
-
-Start the app:
-
-```bash
-docker-compose up
-```
-
-Access the development server:
-
-👉 [http://localhost:8000/](http://localhost:8000/)
-
-Stop the server:
-
-`CTRL + C`
-
----
-
-# ⚙️ **7. Running Django Commands via Docker**
-
-Some useful examples:
-
-### Create superuser
-
-```bash
-docker-compose run web python manage.py createsuperuser
-```
-
-### Django shell
-
-```bash
-docker-compose run web python manage.py shell
-```
-
-### Run tests
-
-```bash
-docker-compose run web python manage.py test
-```
-
----
-
-# 📦 **8. Installing New Packages**
-
-1. Add the package to `requirements.txt`
-2. Rebuild Docker:
-
-```bash
-docker-compose build
-```
-
-That's it — Docker will reinstall everything.
-
----
-
-# 🎉 **You Are Ready to Build Your API**
-
-After completing the Docker setup, proceed with:
-
-* Custom user model
-* Conversation model
-* Message model
-* Serializers
-* ViewSets
-* URL routing
-
----
-
-## Tasks / Features
-
-This project implements a messaging application with the following key functionalities:
-
-### 1. User Authentication
-
-Users can register, log in, and manage their accounts. The app uses a custom user model defined in `chats/models.py`.
-
-**Code Example:**
-```python
-# chats/models.py
-from django.contrib.auth.models import AbstractUser
-from django.db import models
-
-class User(AbstractUser):
-    bio = models.TextField(blank=True, null=True)
-````
-
-**Explanation:**
-
-* `AbstractUser` allows extending the default Django user.
-* `bio` is a custom field added to store user information.
-
----
-
-### 2. Chat Functionality
-
-Users can send and receive messages in real-time. The messages are stored in the database.
-
-**Code Example:**
-
-```python
-# chats/models.py
-class Message(models.Model):
-    sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
-    receiver = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
-    content = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"From {self.sender} to {self.receiver}: {self.content[:20]}"
-```
-
-**Explanation:**
-
-* `ForeignKey` links messages to sender and receiver users.
-* `auto_now_add=True` automatically sets the timestamp when the message is created.
-
----
-
-### 3. API Endpoints
-
-The app exposes RESTful APIs for chat operations using Django REST Framework.
-
-**Code Example:**
-
-```python
-# chats/serializers.py
-from rest_framework import serializers
-from .models import Message
-
-class MessageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Message
-        fields = '__all__'
-```
-
-```python
-# chats/views.py
-from rest_framework import viewsets
-from .models import Message
-from .serializers import MessageSerializer
-
-class MessageViewSet(viewsets.ModelViewSet):
-    queryset = Message.objects.all()
-    serializer_class = MessageSerializer
-```
-
-**Explanation:**
-
-* `ModelSerializer` automatically converts models to JSON for the API.
-* `ModelViewSet` provides default CRUD operations (`list`, `create`, `retrieve`, `update`, `delete`).
-
----
-
-### 4. Running Tasks
-
-To perform the migrations, run the following:
-
-```bash
-docker-compose run web python manage.py makemigrations
-docker-compose run web python manage.py migrate
-```
-
-**Explanation:**
-
-* `makemigrations` detects changes in models and creates migration files.
-* `migrate` applies these migrations to the database.
-
----
-
-### 5. Running the Server
-
-```bash
-docker-compose up --build
-```
-
-Then open `http://localhost:8000` in your browser.
-
-**Explanation:**
-
-* `--build` ensures all Docker images are rebuilt.
-* The server reloads automatically on code changes during development.
-
-
----
-
-✅ This structure:  
-
-1. Shows **task/feature name**.  
-2. Includes **code snippets**.  
-3. Explains **how it works** in simple terms.  
-4. Includes **commands to run or test the functionality**.
-
-Sure! Here's a professional **README.md** template for your `messaging_app` module. It explains the project, concepts, and the tasks you implemented. You can adjust the details to match your exact setup.
-
----
-
-# Messaging App - Backend Module
-
-This is a backend messaging application built with **Django** and **Django REST Framework (DRF)**. It implements a custom user model, conversation and messaging functionalities, and exposes RESTful APIs.  
-
-The project is containerized with **Docker** using `docker-compose` for easier deployment and development.
+A Django REST Framework (DRF) project for managing users, conversations, and messages. Designed to provide a robust backend for chat applications with modular architecture, authentication, and API endpoints.
 
 ---
 
 ## Table of Contents
 
-- [Project Overview](#project-overview)  
-- [Key Concepts](#key-concepts)  
-- [Project Structure](#project-structure)  
-- [Tasks and Features](#tasks-and-features)  
-- [Setup and Running](#setup-and-running)  
-- [Testing](#testing)  
-- [Admin Interface](#admin-interface)  
+1. [Project Overview](#project-overview)
+2. [Features](#features)
+3. [Tech Stack](#tech-stack)
+4. [Project Structure](#project-structure)
+5. [Setup & Installation](#setup--installation)
+6. [Docker Setup](#docker-setup)
+7. [Database & Migrations](#database--migrations)
+8. [API Endpoints](#api-endpoints)
+9. [Testing](#testing)
+10. [Contributing](#contributing)
+11. [License](#license)
 
 ---
 
 ## Project Overview
 
-The Messaging App backend provides the following features:  
+This project is a backend service for messaging applications. Users can participate in conversations, send messages, and retrieve message histories. Built with Django REST Framework for scalable and maintainable API design.
 
-- User registration and authentication with **email as the username**  
-- CRUD operations for **Conversations** and **Messages**  
-- Ability for users to participate in multiple conversations  
-- REST API endpoints for sending and retrieving messages  
+Key focus:
 
-The app uses a **custom User model** to remove the default username field and replace it with email as the primary login identifier.
+* Modular Django apps (`chats`)
+* RESTful endpoints
+* Authentication using Django’s default User model (extended)
+* Filtering and querying for conversations and messages
 
 ---
 
-## Key Concepts
+## Features
 
-1. **Custom User Model**  
-   - Extends Django's `AbstractUser`  
-   - `username` field removed, `email` is unique and required  
-   - Additional fields: `role`, `phone_number`, `user_id`  
+* **User Management:** Create, list, and manage users.
+* **Conversations:** Create conversations involving multiple users.
+* **Messages:** Send messages to existing conversations.
+* **Filtering:** Query conversations by participant email and messages by sender or conversation ID.
+* **Authentication:** API access protected using token or session-based authentication.
+* **Dockerized:** Run the app in Docker containers for consistent development and deployment.
 
-2. **Models**  
-   - `Conversation`: Represents a chat session between multiple users  
-   - `Message`: Represents individual messages in a conversation  
-   - Relationships:  
-     - `Conversation.participants` → ManyToMany with `User`  
-     - `Message.sender` → ForeignKey to `User`  
-     - `Message.conversation` → ForeignKey to `Conversation`  
+---
 
-3. **REST API with DRF**  
-   - API endpoints for:  
-     - Listing and creating conversations  
-     - Sending and retrieving messages  
-   - Authentication using JWT tokens (via `rest_framework_simplejwt`)  
+## Tech Stack
 
-4. **Docker & Docker Compose**  
-   - Containers for app and database  
-   - Simplifies running, testing, and migrations  
+* Python 3.11
+* Django 4.x
+* Django REST Framework
+* SQLite (development, can swap for Postgres in production)
+* Docker & Docker Compose
 
 ---
 
 ## Project Structure
 
 ```
-
 messaging_app/
+│
 ├── chats/
-│   ├── models.py         # User, Conversation, Message
-│   ├── serializers.py    # DRF serializers
-│   ├── views.py          # API views
-│   ├── urls.py           # API routing
-│   └── tests/
-│       ├── test_models.py
-│       └── test_api.py
-├── manage.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── serializers.py
+│   ├── tests.py
+│   ├── urls.py
+│   └── views.py
+│
+├── messaging_app/
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+│
 ├── Dockerfile
 ├── docker-compose.yml
-└── requirements.txt
-
-````
-
----
-
-## Tasks and Features
-
-### Task 1: Custom User Model
-- Remove `username`, use `email` as login  
-- Add `role`, `phone_number`, `user_id`  
-- Override `USERNAME_FIELD` and `REQUIRED_FIELDS`  
-
-### Task 2: Conversation Model
-- Many-to-many relationship with `User`  
-- Auto-generate `conversation_id`  
-
-### Task 3: Message Model
-- ForeignKey relationships with `User` and `Conversation`  
-- Auto-generate `message_id` and timestamp  
-
-### Task 4: API Endpoints
-- `POST /conversations/` → Create conversation  
-- `GET /conversations/` → List conversations  
-- `POST /messages/` → Send message  
-- `GET /messages/<conversation_id>/` → List messages  
-
-### Task 5: Admin Interface
-- Register models in `admin.py`  
-- Allows viewing Users, Conversations, and Messages  
-
-### Task 6: Testing
-- Unit tests for models  
-- API tests for endpoints using `APITestCase`  
-- Run tests with:
-
-```bash
-docker-compose exec web python manage.py test
-````
+├── requirements.txt
+├── manage.py
+└── db.sqlite3
+```
 
 ---
 
-## Setup and Running
+## Setup & Installation
 
-1. **Clone the repo**
+### 1. Clone the repository
 
 ```bash
-git clone <repo_url>
+git clone https://github.com/your-username/alx-backend-python.git
 cd messaging_app
 ```
 
-2. **Start Docker containers**
+### 2. Install Python dependencies (without Docker)
 
 ```bash
-docker-compose up -d --build
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-3. **Apply migrations**
+---
+
+## Docker Setup
+
+### 1. Build Docker containers
 
 ```bash
+docker-compose build
+```
+
+### 2. Start containers
+
+```bash
+docker-compose up -d
+```
+
+### 3. Access the web container
+
+```bash
+docker-compose exec web bash
+```
+
+### 4. Run Django commands inside container
+
+```bash
+# Make migrations
+python manage.py makemigrations
+
+# Apply migrations
+python manage.py migrate
+
+# Create a superuser (optional)
+python manage.py createsuperuser
+
+# Run server
+python manage.py runserver 0.0.0.0:8000
+```
+
+### 5. Stop and remove containers
+
+```bash
+docker-compose down
+```
+
+---
+
+## Database & Migrations
+
+* The project uses **SQLite** by default.
+* All migrations are located in `chats/migrations/`.
+* To reset the database (e.g., during development):
+
+```bash
+docker-compose down --volumes
+rm db.sqlite3
+docker-compose up -d
+docker-compose exec web python manage.py makemigrations
 docker-compose exec web python manage.py migrate
 ```
 
-4. **Create superuser**
+---
 
-```bash
-docker-compose exec web python manage.py createsuperuser
-```
+## API Endpoints
 
-5. **Run the server**
+### Conversations
 
-```bash
-docker-compose exec web python manage.py runserver 0.0.0.0:8000
-```
+* `GET /api/conversations/` — List all conversations
+* `POST /api/conversations/` — Create a new conversation
+* `POST /api/conversations/{id}/send-message/` — Send message in a conversation
+
+### Messages
+
+* `GET /api/messages/` — List all messages
+* `POST /api/messages/` — Create a message
+* Filter messages: `?sender=email` or `?conversation=id`
+
+> **Note:** You can filter conversations by participant email: `/api/conversations/?participant=user@example.com`
 
 ---
 
 ## Testing
 
-* Run all tests:
+* Unit and integration tests are located in `chats/tests/`.
+* Run tests with:
 
 ```bash
-docker-compose exec web python manage.py test -v 2
+docker-compose exec web python manage.py test
 ```
 
-* Test coverage includes:
+---
 
-  * User creation
-  * Conversation creation
-  * Sending and retrieving messages
+## Contributing
+
+1. Fork the repo
+2. Create a new branch (`git checkout -b feature/your-feature`)
+3. Make changes and commit (`git commit -m "Add feature"`)
+4. Push to branch (`git push origin feature/your-feature`)
+5. Create a pull request
 
 ---
 
-## Admin Interface
+## License
 
-* URL: `http://localhost:8000/admin/`
-* Log in with the superuser account
-* Manage Users, Conversations, and Messages
+This project is licensed under the MIT License.
+© 2025 ALX, All rights reserved.
 
----
-
-## Notes
-
-* Custom User model must be defined **before first migration**
-* Any migration conflicts require database reset (dev only)
-* JWT authentication is used for API endpoints
-
----
