@@ -24,8 +24,12 @@ def log_message_edit(sender, instance, **kwargs):
         return
 
     old_msg = Message.objects.get(pk=instance.pk)
+
     if old_msg.content != instance.content:
         instance.edited = True
+        instance.edited_at = timezone.now()
+        instance.edited_by = instance.sender  # or request.user via a service layer
+
         MessageHistory.objects.create(
             message=instance,
             old_content=old_msg.content
