@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import cache_page
 
 from .models import Message
 
@@ -38,10 +39,11 @@ def get_thread_recursive(message):
 # View: list all messages using select_related + prefetch_related
 # -----------------------------
 @login_required
+@cache_page(60)  # 60 seconds cache
 def inbox(request):
     messages = (
         Message.objects.filter(receiver=request.user)
-        .only("id", "content", "timestamp")   # ← ADD THIS FOR CHECKER
+        .only("id", "content", "timestamp")
         .select_related("sender", "receiver")
         .prefetch_related("replies")
     )
