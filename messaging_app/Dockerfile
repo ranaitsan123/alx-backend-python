@@ -1,20 +1,27 @@
-FROM python:3.11-slim
+# Base Image
+FROM python:3.10-slim
 
-# Prevent Python from writing .pyc files
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
+# Work directory in container
 WORKDIR /app
 
-# Install system dependencies (needed for Django + psycopg2)
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    && apt-get clean
+    netcat-openbsd \
+    default-libmysqlclient-dev \
+    build-essential
 
-COPY requirements.txt /app/
+# Copy dependencies file
+COPY requirements.txt .
 
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Install dependencies
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
-COPY . /app/
+# Copy project
+COPY . .
+
+# Expose Django port
+EXPOSE 8000
+
+# Run migrations + Start server
+CMD ["bash", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
