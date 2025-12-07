@@ -1,27 +1,20 @@
-# Base Image
 FROM python:3.10-slim
 
-# Work directory in container
 WORKDIR /app
 
-# Install system dependencies
+COPY requirements.txt .
+
 RUN apt-get update && apt-get install -y \
-    netcat-openbsd \
     default-libmysqlclient-dev \
     build-essential
 
-# Copy dependencies file
-COPY requirements.txt .
-
-# Install dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Copy project
 COPY . .
 
-# Expose Django port
+# Expose port (run with: docker run -p 8000:8000 image)
 EXPOSE 8000
 
-# Run migrations + Start server
-CMD ["bash", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+CMD ["bash", "-c", "python3 manage.py migrate && python3 manage.py runserver 0.0.0.0:8000"]
+git 
