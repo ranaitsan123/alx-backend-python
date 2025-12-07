@@ -1,0 +1,10 @@
+Django>=5.0
+djangorestframework
+django-environ
+drf-yasg
+djangorestframework-simplejwt
+faker
+psycopg2-binary
+djangorestframework
+djangorestframework-simplejwt
+django-filter
