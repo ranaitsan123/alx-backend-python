@@ -1,0 +1,9 @@
+Django>=5.0
+djangorestframework
+django-environ
+drf-yasg
+djangorestframework-simplejwt
+faker
+psycopg2-binary
+django-filter
+drf-nested-routers

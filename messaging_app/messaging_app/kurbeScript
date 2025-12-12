@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo "🔥 Starting Minikube Kubernetes Cluster..."
+
+# Start Minikube
+minikube start
+
+echo "✅ Minikube started."
+
+echo "📡 Checking cluster info..."
+kubectl cluster-info
+
+echo "📦 Retrieving available pods..."
+kubectl get pods -A
+
+echo "🎉 Kubernetes local cluster is ready!"
