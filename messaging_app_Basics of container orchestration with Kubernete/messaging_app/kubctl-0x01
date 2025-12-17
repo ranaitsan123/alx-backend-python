@@ -1,0 +1,18 @@
+#!/bin/bash
+
+echo "📈 Scaling Django app to 3 replicas..."
+kubectl scale deployment messaging-app --replicas=3
+
+echo "🔍 Verifying running pods..."
+kubectl get pods
+
+echo "📊 Monitoring cluster resource usage (top nodes & pods)..."
+kubectl top nodes
+kubectl top pods
+
+echo "⚡ Load testing with wrk (30 seconds)..."
+# If using minikube service tunnel:
+APP_URL=$(minikube service messaging-service --url)
+wrk -t2 -c50 -d30s $APP_URL
+
+echo "🎉 Scaling test completed!"

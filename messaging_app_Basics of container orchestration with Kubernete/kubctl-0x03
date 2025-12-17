@@ -1,0 +1,15 @@
+#!/bin/bash
+
+echo "🚀 Applying rolling update for BLUE deployment..."
+kubectl apply -f blue_deployment.yaml
+
+echo "📡 Monitoring rollout status..."
+kubectl rollout status deployment/messaging-blue
+
+echo "🌐 Testing for downtime..."
+APP_URL=$(minikube service messaging-service --url)
+
+while true; do
+  curl -s -o /dev/null -w "%{http_code} " $APP_URL
+  sleep 1
+done
