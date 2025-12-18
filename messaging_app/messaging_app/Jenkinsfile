@@ -9,15 +9,16 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git credentialsId: 'github-creds',
-                    url: 'https://github.com/aichalahnite/alx-backend-python.git'
+                git branch: 'main',
+                    credentialsId: 'github-creds',
+                    url: 'https://github.com/ranaitsan123/alx-backend-python.git'
             }
         }
 
         stage('Run Tests') {
             steps {
                 sh '''
-                pip install -r messaging_app/requirements.txt
+                pip3 install -r messaging_app/requirements.txt
                 pytest messaging_app
                 '''
             }
